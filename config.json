@@ -1,23 +1,23 @@
 {
-  "tripName": "Coastal Getaway",
-  "tagline": "A few days away",
-  "startDate": "2027-05-10",
-  "endDate": "2027-05-14",
-  "timeZone": "America/Los_Angeles",
+  "tripName": "Taiwan and Japan 2028",
+  "tagline": "40 + 10",
+  "startDate": "2028-06-01",
+  "endDate": "2028-06-17",
+  "timeZone": "Asia/Tokyo",
   "heroImage": "",
   "accent": "#294b3e",
   "suggestionFormUrl": "",
   "destinations": [
     {
-      "name": "Seaside",
-      "startDate": "2027-05-10",
-      "endDate": "2027-05-12",
+      "name": "Taipei",
+      "startDate": "2028-06-01",
+      "endDate": "2028-06-06",
       "image": ""
     },
     {
-      "name": "Mountain Town",
-      "startDate": "2027-05-12",
-      "endDate": "2027-05-14",
+      "name": "Tokyo",
+      "startDate": "2028-06-12",
+      "endDate": "2028-06-17",
       "image": ""
     }
   ]
