@@ -1,0 +1,87 @@
+{
+  "updatedAt": "2027-01-01T00:00:00Z",
+  "sheets": {
+    "Itinerary": [
+      {
+        "ID": "DEMO-01",
+        "Date": "2027-05-10",
+        "Destination": "Seaside",
+        "Time": "2:00 PM",
+        "Category": "Activity",
+        "Activity": "Explore the waterfront",
+        "Address": "",
+        "Map URL": "",
+        "Website URL": "",
+        "Estimated Cost ($)": "0",
+        "Status": "Planned",
+        "Photo URL": "",
+        "Reservation Link": "",
+        "Notes": "Sample activity"
+      },
+      {
+        "ID": "DEMO-02",
+        "Date": "2027-05-11",
+        "Destination": "Seaside",
+        "Time": "6:00 PM",
+        "Category": "Dining",
+        "Activity": "Dinner by the harbor",
+        "Address": "",
+        "Map URL": "",
+        "Website URL": "",
+        "Estimated Cost ($)": "80",
+        "Status": "Idea",
+        "Photo URL": "",
+        "Reservation Link": "",
+        "Notes": "Sample restaurant"
+      }
+    ],
+    "Stays": [
+      {
+        "Stay ID": "DEMO-STAY",
+        "Destination": "Seaside",
+        "Check-in": "2027-05-10",
+        "Check-out": "2027-05-12",
+        "Property": "Sample hotel",
+        "Address": "",
+        "Website": "",
+        "Total Cost ($)": "250",
+        "Status": "Planned",
+        "Notes": "Sample stay"
+      }
+    ],
+    "Ideas": [
+      {
+        "Idea ID": "DEMO-IDEA",
+        "Destination": "Mountain Town",
+        "Type": "Sightseeing",
+        "Name": "Scenic overlook",
+        "Why Visit": "Beautiful views",
+        "Website": "",
+        "Map URL": "",
+        "Estimated Cost ($)": "0",
+        "Priority": "High",
+        "Status": "Approved",
+        "Notes": "Fictional example"
+      }
+    ],
+    "Budget": [
+      {
+        "Category": "Dining",
+        "Estimated ($)": "80",
+        "Notes": "Sample estimate"
+      },
+      {
+        "Category": "Lodging",
+        "Estimated ($)": "250",
+        "Notes": "Sample estimate"
+      }
+    ],
+    "Trip Info": [
+      {
+        "Field": "Travel Party",
+        "Value": "Friends",
+        "Notes": "Sample only"
+      }
+    ]
+  }
+}

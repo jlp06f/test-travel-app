@@ -1,0 +1,24 @@
+{
+  "tripName": "Coastal Getaway",
+  "tagline": "A few days away",
+  "startDate": "2027-05-10",
+  "endDate": "2027-05-14",
+  "timeZone": "America/Los_Angeles",
+  "heroImage": "",
+  "accent": "#294b3e",
+  "suggestionFormUrl": "",
+  "destinations": [
+    {
+      "name": "Seaside",
+      "startDate": "2027-05-10",
+      "endDate": "2027-05-12",
+      "image": ""
+    },
+    {
+      "name": "Mountain Town",
+      "startDate": "2027-05-12",
+      "endDate": "2027-05-14",
+      "image": ""
+    }
+  ]
+}

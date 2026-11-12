@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#294b3e">
+  <title>Travel App Factory</title>
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+  <style>
+    :root { --accent:#294b3e; --cream:#f7f5ef; --muted:#66746b; }
+    * {box-sizing:border-box} body {margin:0;background:var(--cream);color:#243d31;font:16px/1.5 system-ui,sans-serif}
+    header {background:var(--accent);color:white;padding:2rem 1.1rem 1.6rem;text-align:center;background-size:cover;background-position:center}
+    h1,h2,h3 {font-family:Georgia,serif;font-weight:normal}h1 {font-size:clamp(2rem,6vw,3.6rem);margin:.4rem 0}h2 {margin:1.4rem 0 .8rem}
+    .wrap {max-width:940px;margin:auto;padding:1rem 1rem 5rem}.subtitle{opacity:.85}.timer {display:flex;justify-content:center;gap:1.5rem;font-variant-numeric:tabular-nums}.timer span{display:block;font-size:1.65rem;font-weight:700}.timer small{font-size:.7rem;letter-spacing:.1em}
+    nav {display:flex;gap:.4rem;overflow-x:auto;padding:.8rem;background:white;border-bottom:1px solid #ddd;position:sticky;top:0;z-index:3;justify-content:center}nav button {border:0;background:transparent;padding:.6rem .8rem;border-radius:9px;color:var(--accent);white-space:nowrap}nav button.active {background:#e1e9e1;font-weight:700}
+    .view {display:none}.view.active {display:block}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}.card{background:white;border:1px solid #e1e3dd;border-radius:14px;padding:1rem;margin:.7rem 0;overflow:hidden}.card img{width:100%;max-height:260px;object-fit:cover;border-radius:9px;margin:.6rem 0}.muted{color:var(--muted)}.pill{background:#e0ebdf;border-radius:40px;padding:.25rem .6rem;font-size:.8rem}
+    button,.button {cursor:pointer} .action{display:inline-block;background:var(--accent);color:white;border:0;border-radius:9px;padding:.7rem 1rem;text-decoration:none;margin:.4rem .4rem .4rem 0} .links a{color:var(--accent);margin-right:1rem} .daybar{display:flex;gap:.5rem;overflow-x:auto;padding:.5rem 0}.daybar button{border:1px solid #d8dfd7;background:white;border-radius:10px;padding:.65rem;white-space:nowrap}.daybar button.active{background:var(--accent);color:white}#error{color:#a2322c}
+  </style>
+</head>
+<body>
+<header id="hero"><div class="subtitle" id="tagline"></div><h1 id="tripName">Loading trip…</h1><div id="dates"></div><div id="timer" class="timer"></div><button class="action" onclick="loadData()">Refresh itinerary</button><div id="syncTime" class="subtitle"></div></header>
+<nav id="nav"></nav>
+<main class="wrap">
+<section class="view active" id="home"><h2>Destinations</h2><div class="grid" id="destinations"></div><h2>Next up</h2><div id="nextUp"></div></section>
+<section class="view" id="itinerary"><h2>Daily itinerary</h2><div class="daybar" id="daybar"></div><div id="events"></div></section>
+<section class="view" id="stays"><h2>Our stays</h2><div id="stayCards" class="grid"></div></section>
+<section class="view" id="ideas"><h2>Trip ideas</h2><p>Ideas are published after organizer approval. Voting is not included in v1.</p><a class="action" id="suggest" hidden target="_blank" rel="noopener noreferrer">Suggest an activity</a><div id="ideaCards" class="grid"></div></section>
+<section class="view" id="budget"><h2>Estimated trip budget</h2><h3 id="budgetTotal"></h3><div id="budgetCards" class="grid"></div></section>
+<section class="view" id="info"><h2>Trip information</h2><div id="infoCards" class="grid"></div></section>
+<p id="error" role="status"></p></main>
+<script>
+'use strict';
+// Trip branding and dates come from config.json. The published data comes from itinerary.json.
+let config, sheets = {}, selectedDate, currentTab = 'home';
+const tabs = ['home','itinerary','stays','ideas','budget','info'];
+const $ = id => document.getElementById(id);
+const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const get = (row, key) => String(row?.[key] ?? '').trim();
+const safeUrl = url => /^https:\/\//i.test(String(url || '').trim()) ? String(url).trim() : '';
+const link = (url, label) => safeUrl(url) ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>` : '';
+const money = value => {const number = Number(String(value ?? '').replace(/[$,]/g,''));return Number.isFinite(number) ? number : 0};
+const usd = value => money(value).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0});
+const dateOnly = value => {const s = String(value || '');const iso = s.match(/\d{4}-\d{2}-\d{2}/);if(iso)return iso[0];const us=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(us)return `${us[3]}-${us[1].padStart(2,'0')}-${us[2].padStart(2,'0')}`;const d=new Date(s);return Number.isNaN(d.getTime())?'':`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const fmtDate = iso => new Date(iso+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+const dateRange = (start,end) => {const out=[];let d=new Date(start+'T12:00:00'),last=new Date(end+'T12:00:00');for(let n=0;d<=last&&n<100;n++,d.setDate(d.getDate()+1)){out.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`)}return out};
+const timeRank = s => {const m=String(s).match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);if(!m)return /morning/i.test(s)?480:/afternoon/i.test(s)?840:/evening/i.test(s)?1080:9999;let h=+m[1];if(m[3])h=h%12+(/PM/i.test(m[3])?12:0);return h*60+ +m[2]};
+function show(tab){currentTab=tab;document.querySelectorAll('.view').forEach(e=>e.classList.toggle('active',e.id===tab));document.querySelectorAll('[data-tab]').forEach(e=>e.classList.toggle('active',e.dataset.tab===tab));renderNavigation()}
+function renderNavigation(){$('nav').innerHTML=tabs.map(tab=>`<button data-tab="${tab}" class="${tab===currentTab?'active':''}" onclick="show('${tab}')">${tab[0].toUpperCase()+tab.slice(1)}</button>`).join('')}
+function photo(row){const url=safeUrl(get(row,'Photo URL'));return url?`<img loading="lazy" src="${escapeHtml(url)}" alt="${escapeHtml(get(row,'Activity')||'Activity')}" onerror="this.remove()">`:''}
+function eventCard(row){const address=get(row,'Address'),map=safeUrl(get(row,'Map URL'))||(address?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(address):'');return `<article class="card"><div class="muted">${escapeHtml(get(row,'Time')||'Flexible')} · ${escapeHtml(get(row,'Category'))} <span class="pill">${escapeHtml(get(row,'Status')||'Planned')}</span></div><h3>${escapeHtml(get(row,'Activity'))}</h3>${photo(row)}${address?`<p>${escapeHtml(address)}</p>`:''}${get(row,'Notes')?`<p class="muted">${escapeHtml(get(row,'Notes'))}</p>`:''}${get(row,'Estimated Cost ($)')?`<p>Estimate: ${usd(get(row,'Estimated Cost ($)'))}</p>`:''}<div class="links">${link(map,'Directions')}${link(get(row,'Website URL'),'Website')}${link(get(row,'Reservation Link'),'Reservation')}</div></article>`}
+function renderItinerary(){const days=dateRange(config.startDate,config.endDate);if(!days.includes(selectedDate))selectedDate=days[0];$('daybar').innerHTML=days.map(d=>`<button class="${d===selectedDate?'active':''}" onclick="selectedDate='${d}';renderItinerary()">${fmtDate(d)}</button>`).join('');const rows=(sheets.Itinerary||[]).filter(r=>dateOnly(get(r,'Date'))===selectedDate).sort((a,b)=>timeRank(get(a,'Time'))-timeRank(get(b,'Time')));$('events').innerHTML=rows.length?rows.map(eventCard).join(''):'<p class="muted">No activities scheduled for this day.</p>'}
+function renderHome(){$('destinations').innerHTML=(config.destinations||[]).map(d=>`<article class="card">${safeUrl(d.image)?`<img src="${escapeHtml(d.image)}" alt="${escapeHtml(d.name)}" onerror="this.remove()">`:''}<h3>${escapeHtml(d.name)}</h3><p class="muted">${escapeHtml(d.startDate)} – ${escapeHtml(d.endDate)}</p></article>`).join('');const first=(sheets.Itinerary||[]).filter(r=>dateOnly(get(r,'Date'))>=config.startDate).sort((a,b)=>dateOnly(get(a,'Date')).localeCompare(dateOnly(get(b,'Date')))||timeRank(get(a,'Time'))-timeRank(get(b,'Time')))[0];$('nextUp').innerHTML=first?eventCard(first):'<p class="muted">Add activities in Google Sheets to get started.</p>'}
+function simpleCards(name,id,render){const rows=sheets[name]||[];$(id).innerHTML=rows.length?rows.map(render).join(''):'<p class="muted">Nothing added yet.</p>'}
+function renderAll(){renderNavigation();renderHome();renderItinerary();simpleCards('Stays','stayCards',r=>`<article class="card"><h3>${escapeHtml(get(r,'Property'))}</h3><p>${escapeHtml(get(r,'Destination'))}</p><p>${escapeHtml(get(r,'Check-in'))} – ${escapeHtml(get(r,'Check-out'))}</p><p>${escapeHtml(get(r,'Address'))}</p>${link(get(r,'Website'),'Website')}</article>`);simpleCards('Ideas','ideaCards',r=>`<article class="card"><h3>${escapeHtml(get(r,'Name'))}</h3><p>${escapeHtml(get(r,'Why Visit'))}</p><p class="muted">${escapeHtml(get(r,'Destination'))} · ${escapeHtml(get(r,'Status'))}</p>${link(get(r,'Website'),'Website')}</article>`);const budget=(sheets.Budget||[]).filter(r=>get(r,'Category').toUpperCase()!=='TOTAL');$('budgetTotal').textContent=usd(budget.reduce((sum,r)=>sum+money(get(r,'Estimated ($)')),0));simpleCards('Budget','budgetCards',r=>get(r,'Category').toUpperCase()==='TOTAL'?'':`<article class="card"><h3>${escapeHtml(get(r,'Category'))}</h3><p>Estimated: ${usd(get(r,'Estimated ($)'))}</p></article>`);simpleCards('Trip Info','infoCards',r=>`<article class="card"><h3>${escapeHtml(get(r,'Field'))}</h3><p>${escapeHtml(get(r,'Value'))}</p></article>`)}
+function tick(){const ms=Math.max(0,new Date(config.startDate+'T00:00:00').getTime()-Date.now());if(!ms){$('timer').textContent='Your adventure is here!';return}const sec=Math.floor(ms/1000),values=[Math.floor(sec/86400),Math.floor(sec%86400/3600),Math.floor(sec%3600/60),sec%60],labels=['DAYS','HOURS','MIN','SEC'];$('timer').innerHTML=values.map((v,i)=>`<div><span>${String(v).padStart(2,'0')}</span><small>${labels[i]}</small></div>`).join('')}
+async function loadData(){try{const response=await fetch('./itinerary.json?t='+Date.now(),{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const payload=await response.json();if(!payload.sheets||!Array.isArray(payload.sheets.Itinerary))throw new Error('Invalid itinerary data');sheets=payload.sheets;renderAll();$('syncTime').textContent=payload.updatedAt?'Last synced: '+new Date(payload.updatedAt).toLocaleString('en-US',{timeZone:config.timeZone}):'Sample itinerary';$('error').textContent=''}catch(e){$('error').textContent='Could not load itinerary.json: '+e.message}}
+async function boot(){try{const response=await fetch('./config.json',{cache:'no-store'});if(!response.ok)throw new Error('Missing config.json');config=await response.json();if(!/^#[0-9a-fA-F]{6}$/.test(config.accent||''))config.accent='#294b3e';document.documentElement.style.setProperty('--accent',config.accent);$('tripName').textContent=config.tripName;$('tagline').textContent=config.tagline||'';$('dates').textContent=`${fmtDate(config.startDate)} – ${fmtDate(config.endDate)}`;if(safeUrl(config.heroImage)){$('hero').style.backgroundImage=`linear-gradient(#17362677,#17362699),url("${safeUrl(config.heroImage)}")`}$('suggest').hidden=!safeUrl(config.suggestionFormUrl);if(safeUrl(config.suggestionFormUrl))$('suggest').href=config.suggestionFormUrl;renderNavigation();tick();setInterval(tick,1000);await loadData()}catch(e){$('error').textContent='Startup error: '+e.message}}
+boot();
+</script>
+</body>
+</html>
